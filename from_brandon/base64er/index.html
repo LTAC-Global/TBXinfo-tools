@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Base64 Converter</title>
+    <style>
+	h2 {
+	    font-family: sans-serif;
+	}
+        .box {
+            margin: 5px;
+            padding: 10px;
+            background-color: #0074aa36;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sub {
+            width: 45vw;
+        }
+
+        .form {
+            display: flex;
+            align-items: center;
+        }
+
+        .form-label {
+            width: auto;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        input {
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            margin: 10px;
+        }
+
+        button {
+            border-radius: 7px;
+     	    padding: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+	    width: 10vw;
+        }
+    </style>
+</head>
+<body>
+    <h1>TBX Base64 Image Tools</h1>
+    <p>Base64 is a way to embed images (and other complex data types) into a plain text file, such as a TBX document instance. On this page, you can encode images into TBX elements that use base64 strings, and decode base64 strings to see the image encoded therein.</p>
+    <hr>
+    <div class="box">
+        <h2>Convert Image to Base64 string</h2>
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="convertToBase64()">Convert</button>
+        <textarea id="base64Output" rows="10" cols="50" placeholder="Base64 string will appear here..." readonly></textarea>
+    </div>
+    <script>
+        function convertToBase64() {
+            const input = document.getElementById('imageInput');
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function () {
+                    const base64 = reader.result.slice(reader.result.indexOf(",") + 1)
+                    // TODO: wrap in TBX element?
+                    document.getElementById('base64Output').value = base64;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert("Please select an image file.");
+            }
+        }
+    </script>
+
+    <div style="display: flex; flex-direction: row; justify-content: space-evenly;">   
+    <div class="box sub">
+        <h2>Convert Base64 String to Image</h2>
+        <p>This is useful for making sure that your base64 string represents the correct image as intended.</p>
+        <textarea id="base64Input" rows="10" cols="50" placeholder="Paste Base64 string here..."></textarea>
+        <button onclick="convertToImage()" style="align-self: center;">Convert</button>
+        <br>
+        <img id="outputImage" alt="Converted Image" style="max-width: 90%; margin: 10px; display: none; align-self: center;">
+    </div>
+    <script>
+        function convertToImage() {
+            const base64String = document.getElementById('base64Input').value.trim();
+            if (base64String) {
+                document.getElementById('outputImage').src = "data:image/png;base64," + base64String;
+                document.getElementById('outputImage').style.display = 'block';
+                document.getElementById('outputImage').scrollIntoView({behavior:"smooth"});
+            } else {
+                alert("Please enter a valid Base64 string.");
+            }
+        }
+    </script>
+    <div class="box sub">
+        <h2>Wrap Base64 String in TBX Element</h2>
+        <p>Use this box to create lines of valid DCA TBX that can be used to insert your image in a TBX Document Instance as a figure data category. You'll need to input a little extra information.</p>
+        <p>NB: If your TBX viewer does not support images embedded in the back matter, you will likely see whatever you enter here as the figure ID in place of the image in the <i>figure</i> element.</p>
+        <div class="form">
+            <label for="TBXbase64" class="form-label">Base64 data: </label>
+            <textarea id="TBXbase64" rows="1" cols="50" placeholder="Paste Base64 string here..."></textarea>
+        </div>
+        <div class="form">
+            <label for="TBXformat" class="form-label">Image format: </label>
+            <textarea id="TBXformat" rows="1" cols="50" placeholder="Paste image format (e.g., jpg, png) here..."></textarea>
+        </div>
+        <div class="form">
+            <label for="TBXfigID" class="form-label">Unique ID for image: </label>
+            <textarea id="TBXfigID" rows="1" cols="50" placeholder="Paste a unique figure ID here..."></textarea>
+        </div>
+        <button onclick="convertToTBX()" style="align-self: center;">Convert</button>
+        <br>
+        <span style="width: 100%; border-bottom: rgba(1, 21, 111, 0.463) solid; align-self: center;"></span>
+        <p><i>figure</i> to be placed in a <i>conceptEntry</i> element: </p><textarea id="bodyOutput" rows="2" cols="50" placeholder="TBX element for body will appear here..." readonly></textarea>
+        <p><i>refObjectSec</i> to be placed in the <i>back</i> element: </p><textarea id="backOutput" rows="10" cols="50" placeholder="TBX element for back matter will appear here..." readonly></textarea>
+    </div>
+    <script>
+        function convertToTBX() {
+            const base64String = document.getElementById('TBXbase64').value.trim();
+            const format = document.getElementById('TBXformat').value.trim();
+            const figID = document.getElementById('TBXfigID').value.trim().replaceAll(" ","-") + "-img";
+            if(base64String && format && figID) {
+                document.getElementById("bodyOutput").value = `<descrip type="figure" target="${figID}">${figID} embedded in back matter</descrip>`;
+                document.getElementById("backOutput").value = `<refObjectSec type="binaryData">
+    <refObject id="${figID}">
+        <item type="codePage">base64</item>
+        <item type="format">${format}</item>
+        <item type="data">
+${base64String}</item>
+    </refObject>
+</refObjectSec>`;
+            } else {
+                alert("Please fill out all parameters");
+            }
+
+        }
+    </script>
+    </div>
+</body>
+</html>
